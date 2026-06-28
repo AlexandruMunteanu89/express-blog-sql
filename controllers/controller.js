@@ -1,5 +1,5 @@
 //  Importo dati del post
-const posts = require("../data/posts");
+const posts = require('../data/posts');
 
 // Importiamo il file di connessione al database
 const connection = require('../data/connection');
@@ -7,17 +7,30 @@ const connection = require('../data/connection');
 // elenco funzioni relative alle rotte della risorsa post
 
 const index = (req, res) => {
-    res.send("List of posts from the db")
+
+    const sql = 'SELECT * FROM posts';
+    connection.query(sql, (err, results) => {
+        console.log(err);
+        
+        if (err) {
+            console.error('Error executing query:', err);
+            return res.status(500).json({ error: true, message: 'Internal Server Error' });
+        }
+        console.log(results);
+        
+        res.json(results);
+    });
+    /*res.send("List of posts from the db")
     const tags = req.query.tags;
 
     if (tags) {
         // filtraggio
         const filteredPosts = posts.filter(post => post.tags.includes(tags));
         return res.json(filteredPosts);
-    }
+    }*/
 
     // funzione per bloccare rotta index e attivare middleware errorsHandler
-    funy.ciao();
+    //  funy.ciao();
 
     // risponde con la lista posts
     res.json(posts);
