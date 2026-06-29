@@ -3,6 +3,7 @@ const posts = require('../data/posts');
 
 // Importiamo il file di connessione al database
 const connection = require('../data/connection');
+const { error } = require('node:console');
 
 // elenco funzioni relative alle rotte della risorsa post
 
@@ -39,9 +40,27 @@ const index = (req, res) => {
 
 const show = (req, res) => {
     console.log(req.params);
-    const postId = parseInt(req.params.id);
+    const postId = Number(req.params.id);
     console.log(postId);
 
+    // Prepariamo la query
+    const sql = 'SELECT * FROM posts WHERE id = ?';
+    // eseguire la query
+    connection.query(sql, [postId], (err, results) => {
+        if (err) {
+            console.error('Error executing query:', err);
+            return res.status(500).json({ error: true, message: 'Internal Server Error' });
+        }
+
+        console.log(results);
+        
+        if (results.length === 0) {
+            return res.status(404).json({ error: true, message: '404 Post non trovato'});
+        }
+
+        res.json(results[0]);
+    });
+/*
     // cerchiamo il post tramite id
     const singlePost = posts.find(post => post.id === postId);
     //imposto lo status 404
@@ -50,7 +69,7 @@ const show = (req, res) => {
     }
 
 
-    res.json(singlePost);
+    res.json(singlePost);*/
     
 }
 
