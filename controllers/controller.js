@@ -32,9 +32,6 @@ const index = (req, res) => {
 
     // funzione per bloccare rotta index e attivare middleware errorsHandler
     //  funy.ciao();
-
-    // risponde con la lista posts
-    res.json(posts);
 }
 
 
@@ -47,11 +44,11 @@ const show = (req, res) => {
     const sql = 'SELECT * FROM posts WHERE id = ?';
     // prepariamo la sql query per unire post_tag
     const sqlJoin = `
-    SELECT posts.title 
-    FROM tags
-    JOIN post_tag ON post_tag.tag_id = tags.id
-    JOIN posts ON post_tag.post_id = posts.id
-    WHERE tags.id = ?`;
+    SELECT *
+    FROM posts
+    JOIN post_tag ON post_tag.post_id = posts.id
+    JOIN tags ON post_tag.tag_id = tags.id
+    WHERE posts.id = ?`;
 
     // eseguire la query
     connection.query(sql, [postId], (err, results) => {
@@ -62,22 +59,23 @@ const show = (req, res) => {
 
         //console.log(results);
         
-        if (results.length === 0) return res.status(404).json({ error: true, message: '404 Post non trovato'});
-        
-        connection.query(sqlJoin, [postId], (err, postsResults) => {
+        if (results.length === 0) {
+            return res.status(404).json({ error: true, message: '404 Post non trovato'});
+        }
+        const post = results[0];
+        connection.query(sqlJoin, [postId], (err, tagsResults) => {
             if (err) {
                 console.error('Error executing query:', err);
                 return res.status(500).json({ error: true, message: 'Internal Server Error'});
             }
             // aggiungi gli posts all'oggetto tag
-            console.log(postsResults);
-            tag.posts = postsResults.map(post => post.title);
-            console.log(tag);
-            
-
-        res.json(results[0]);
-        })
-    });
+            console.log(tagsResults);
+            post.tags = tagsResults.map(post => post.label);
+            //console.log(tag)});
+        res.json(post);
+        });
+});
+}
 /*
     // cerchiamo il post tramite id
     const singlePost = posts.find(post => post.id === postId);
@@ -85,12 +83,7 @@ const show = (req, res) => {
     if (!singlePost) {
         return res.status(404).json({ error: true, message: '404 Post not found' });
     }
-
-
     res.json(singlePost);*/
-    
-}
-
 
 // Store una nuova Post
 const store = (req, res) => {
