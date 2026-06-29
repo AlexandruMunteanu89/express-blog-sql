@@ -45,6 +45,14 @@ const show = (req, res) => {
 
     // Prepariamo la query
     const sql = 'SELECT * FROM posts WHERE id = ?';
+    // prepariamo la sql query per unire post_tag
+    const sqlJoin = `
+    SELECT posts.title 
+    FROM tags
+    JOIN post_tag ON post_tag.tag_id = tags.id
+    JOIN posts ON post_tag.post_id = posts.id
+    WHERE tags.id = ?`;
+
     // eseguire la query
     connection.query(sql, [postId], (err, results) => {
         if (err) {
@@ -52,13 +60,23 @@ const show = (req, res) => {
             return res.status(500).json({ error: true, message: 'Internal Server Error' });
         }
 
-        console.log(results);
+        //console.log(results);
         
-        if (results.length === 0) {
-            return res.status(404).json({ error: true, message: '404 Post non trovato'});
-        }
+        if (results.length === 0) return res.status(404).json({ error: true, message: '404 Post non trovato'});
+        
+        connection.query(sqlJoin, [postId], (err, postsResults) => {
+            if (err) {
+                console.error('Error executing query:', err);
+                return res.status(500).json({ error: true, message: 'Internal Server Error'});
+            }
+            // aggiungi gli posts all'oggetto tag
+            console.log(postsResults);
+            tag.posts = postsResults.map(post => post.title);
+            console.log(tag);
+            
 
         res.json(results[0]);
+        })
     });
 /*
     // cerchiamo il post tramite id
@@ -158,32 +176,17 @@ const modify = (req, res) => {
     
 }
 
-const destroy = (req, res) => {
-    console.log(req.params);
-    const postId = parseInt(req.params.id);
-    console.log(postId);
-    // cerchiamo il post tramite id
-    const thisPost = posts.find(post => post.id === postId);
-
-    //imposto lo status 404
-    if (!thisPost) {
-        return res.status(404).json({ error: true, message: '404 Post not found'});
-    }
-
-    //restituisco un JSON con il post trovato
-    const index = posts.indexOf(thisPost);
-
-    //Rimuoviamo il post
-    posts.splice(index, 1);
-
-    //Returniamo lo status corretto
-    res.sendStatus(204);
-
-
-
-    res.json(thisPost);
-    
-    
-}
+function destroy (req, res) {
+    // recuperiamo l'id dall' URL
+    const { id } = req.params;
+    //Eliminiamo la post dal menu
+    connection.query('DELETE FROM posts WHERE id = ?', [id], (err, result) => {
+        if (err) return res.status(500).json({ error: 'Failed to delete post' });
+        if (result.affectedRows === 0) {
+            return res.status(404).json({ error: 'Post non trovata'})
+        }
+        res.sendStatus(204).end();
+    });
+};
 
 module.exports = {index, show, store, update, modify, destroy};
